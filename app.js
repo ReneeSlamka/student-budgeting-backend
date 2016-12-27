@@ -8,7 +8,7 @@ var bodyParser = require("body-parser");
 var Account = require("./Account.model");
 
 
-var PORT_NUMBER = process.env.port || 3000;
+var PORT_NUMBER = process.env.PORT || 3000;
 var MONGO_PORT_NUMBER = 27017;
 var dbName = "budgetAppBackend";
 var url = "mongodb://localhost:" + MONGO_PORT_NUMBER + "/" + dbName;
