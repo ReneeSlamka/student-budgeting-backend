@@ -1,12 +1,17 @@
 var express = require("express");
 var app = express();
 
+// Third party module imports
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 var db = mongoose.connection;
 var bodyParser = require("body-parser");
-var Account = require("./Account.model");
 
+// Project module imports
+var Account = require("./Account.model");
+var AccountService = require("./AccountService");
+var BudgetService = require("./BudgetService");
+var Messages = require("./Messages");
 
 var PORT_NUMBER = process.env.PORT || 3000;
 var MONGO_PORT_NUMBER = 27017;
@@ -16,26 +21,12 @@ var deploymentUrl = "mongodb://reneeslamka:pinot91@ds145138.mlab.com:45138/colle
 
 
 // Helper objects to avoid hard-coding
-var Collections = {
-    products: "products"
-};
 
 var API_Parameters = {
-    lowestPrice: "lowestprice"
+    username: "username",
+    password: "password"
 };
 
-var Categories = {
-    tech: "tech"
-};
-
-var Messages = {
-    dbConnected: "Connected successfully to server",
-    dbConnectionError: "Error: Unable to connect to database",
-    noResultsFound: "No results found",
-    invalidPriceFilter: "Error: At least one of your filters is invalid. " +
-    "Filter inputs can be positive, whole numbers only.",
-    invalidCategoryFilter: "Error: Invalid category filter"
-};
 
 var Headers = {
     allowOrigin: "Access-Control-Allow-Origin",
@@ -45,54 +36,17 @@ var Headers = {
 };
 
 
-// Mongoose schemas
-
-var BudgetSchema = new Schema({
-    accountId: {
-        type: Number,
-        required: true,
-        unique: true
-    },
-    budgetName: {
-        type: String,
-        required: true
-    },
-    //balance: Number, Todo: rethink this
-    startDate: {
-        type: Date,
-        required: true
-    },
-    endDate: {
-        type: Date,
-        required: true
-    },
-    incomeSources: Array,
-    expenses: Array
-});
-
-
 function appShutdown() {
-    database.close();
+    db.close();
 }
 
-function stringIsANumber(string) {
-    return string.match(/^[0-9]+$/);
+function initResponse(response) {
+    // Allow cross origin requests
+    response.header(Headers.allowOrigin, Headers.allSymbol);
+    response.header(Headers.allowHeaders, Headers.headerTypes);
 }
 
-
-/*
- Initialize global database handle
- */
-//console.log(url);
-//mongoClient.connect(url, function(err, db) {
-//    //assert.equal(null, err);
-//    if (err) {
-//        console.log(Messages.dbConnectionError);
-//    } else {
-//        console.log(Messages.dbConnected);
-//        database = db;
-//    }
-//});
+// Set up conenction to database
 db.on("error", console.error.bind(console, Messages.dbConnectionError));
 db.once("open", function(){
     console.log(Messages.dbConnected);
@@ -108,20 +62,106 @@ app.listen(PORT_NUMBER);
 console.log("Running on port: " + PORT_NUMBER);
 mongoose.connect(deploymentUrl);
 
-app.get('/products', function(request, response) {
 
-    // Allow cross origin requests
-    response.header(Headers.allowOrigin, Headers.allSymbol);
-    response.header(Headers.allowHeaders, Headers.headerTypes);
-    //Set response
-    response.send("Stuff");
-    //Set response HTTP code
+
+// API account functions
+app.post("/account", function(request, response) {
+    initResponse(response);
+    AccountService.createAccount(request, response);
 });
 
+app.get("/account", function(request,response) {
+    initResponse(response);
+    AccountService.getAccountInfo(request, response);
+});
+
+app.put("/account", function(request, response) {
+    initResponse(response);
+    AccountService.modifyAccount(request, response);
+});
+
+
+// API session functions
+app.post("/session", function(request, response) {
+    initResponse(response);
+    AccountService.login();
+});
+
+app.delete("/session", function(request, response) {
+    initResponse(response);
+    AccountService.logout();
+});
+
+
+// API budget functions
+app.post("/budget", function(requestion, response) {
+    initResponse(response);
+    BudgetService.createBudget();
+});
+
+app.get("/budget", function(requestion, response) {
+    initResponse(response);
+    BudgetService.getBudget();
+});
+
+app.put("/budget", function(requestion, response) {
+    initResponse(response);
+    BudgetService.modifyBudget();
+});
+
+app.post("/budget", function(requestion, response) {
+    initResponse(response);
+    BudgetService.deleteBudget();
+});
+
+
+// API income source functions
+app.post("/income-source", function(requestion, response) {
+    initResponse(response);
+    BudgetService.getIncomeSource();
+});
+
+app.put("/income-source", function(requestion, response) {
+    initResponse(response);
+    BudgetService.modifyIncomeSource();
+});
+
+app.get("/income-source", function(requestion, response) {
+    initResponse(response);
+    BudgetService.getIncomeSource();
+});
+
+app.delete("/income-source", function(requestion, response) {
+    initResponse(response);
+    BudgetService.deleteIncomeSource();
+});
+
+
+// API expense functions
+app.post("/expense", function(requestion, response) {
+    initResponse(response);
+    BudgetService.addExpense();
+});
+
+app.put("/expense", function(requestion, response) {
+    initResponse(response);
+    BudgetService.modifyExpense();
+});
+
+app.get("/expense", function(requestion, response) {
+    initResponse(response);
+    BudgetService.getExpense();
+});
+
+app.delete("/expense", function(requestion, response) {
+    initResponse(response);
+    BudgetService.deleteExpense();
+});
+
+
+
 app.get("/db-test", function(request, response) {
-    // Allow cross origin requests
-    response.header(Headers.allowOrigin, Headers.allSymbol);
-    response.header(Headers.allowHeaders, Headers.headerTypes);
+   initResponse(response);
 
     Account.find({}).exec(function(err, accounts) {
         if (err) {
