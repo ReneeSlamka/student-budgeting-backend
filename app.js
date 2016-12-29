@@ -3,9 +3,10 @@ var app = express();
 
 // Third party module imports
 var mongoose = require("mongoose");
-var Schema = mongoose.Schema;
 var db = mongoose.connection;
 var bodyParser = require("body-parser");
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended:true}));
 
 // Project module imports
 var Account = require("./Account.model");

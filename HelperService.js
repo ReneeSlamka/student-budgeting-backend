@@ -10,5 +10,16 @@ module.exports = {
     isValidEmail: function(string) {
         var re = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
         return string.match(re);
+    },
+
+    createResponseObj: function(succeededBool, message) {
+        var responseObj = {};
+        responseObj.succeeded = succeededBool;
+
+        if (message) {
+            responseObj.message = message;
+        }
+
+        return responseObj;
     }
 };

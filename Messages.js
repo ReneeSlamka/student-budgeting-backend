@@ -16,7 +16,9 @@ module.exports = {
     },
 
     invalidParameter: function(param) {
-        return "The provided " + " was invalid. Please try again with a different one.";
-    }
+        return "The provided " + param + " was invalid. Please try again with a different one.";
+    },
+
+    mismatchedPasswords: "Error: Password and confirmation password do not match."
 };
 
