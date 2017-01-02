@@ -5,16 +5,17 @@ module.exports = {
     dbError: function(errorMessage) {
         return "The following database error occurred: " + errorMessage;
     },
-    noResultsFound: "No results found",
+    accountNotFound: "Account not found. Either it does not exist or invalid email " +
+    "was entered.",
     invalidPriceFilter: "Error: At least one of your filters is invalid. " +
     "Filter inputs can be positive, whole numbers only.",
     invalidCategoryFilter: "Error: Invalid category filter",
 
-    missingParameter: function(param) {
+    missingParam: function(param) {
         return "Your request was missing the following parameter: " + param;
     },
 
-    blankParameter: function(param) {
+    blankParam: function(param) {
         return "Empty strings are not legal values for " + param;
     },
 
@@ -23,6 +24,7 @@ module.exports = {
     },
 
     mismatchedPasswords: "Error: Password and confirmation password do not match.",
-    duplicateEmail: "An account already exists with this email. Please use another one."
+    duplicateEmail: "An account already exists with this email. Please use another one.",
+    incorrectPassword: "The password you entered is incorrect. Please try again."
 };
 
