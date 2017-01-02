@@ -74,7 +74,7 @@ app.post("/account", function(request, response) {
 
 app.get("/account", function(request,response) {
     initResponse(response);
-    AccountService.getAccountInfo(request, response);
+    AccountService.getAccountInfo(response);
 });
 
 app.put("/account", function(request, response) {
@@ -169,7 +169,7 @@ app.get("/db-test", function(request, response) {
         if (err) {
             response.send(Messages.invalidCategoryFilter);
         }
-        response.json(accounts);
+
     });
 
 });

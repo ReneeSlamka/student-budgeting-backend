@@ -96,13 +96,16 @@ module.exports = {
         });
     },
 
-    getAccountInfo: function() {
-        Account.find({}).exec(function(err, accounts) {
-            if (err) {
-                response.send(Messages.invalidCategoryFilter);
-            }
-            console.log(accounts);
-            response.json(accounts);
+    getAccountInfo: function(response) {
+        var responseObj;
+        Account.find({}).then(function(accounts) {
+            //console.log(accounts);
+            responseObj = HelperService.createResponseObj(true);
+            responseObj.accounts = accounts;
+            response.send(responseObj);
+        }).catch(function(error) {
+            responseObj = HelperService.createResponseObj(false, Messages.dbError(error));
+            response.send(responseObj);
         });
     },
 
