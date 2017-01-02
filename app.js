@@ -61,6 +61,7 @@ process.once('SIGINT', appShutdown);
 // Set app to list on PORT_NUMBER
 app.listen(PORT_NUMBER);
 console.log("Running on port: " + PORT_NUMBER);
+mongoose.Promise = global.Promise;
 mongoose.connect(deploymentUrl);
 
 
@@ -168,7 +169,6 @@ app.get("/db-test", function(request, response) {
         if (err) {
             response.send(Messages.invalidCategoryFilter);
         }
-        console.log(accounts);
         response.json(accounts);
     });
 

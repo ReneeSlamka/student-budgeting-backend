@@ -2,6 +2,9 @@
 module.exports = {
     dbConnected: "Connected successfully to server",
     dbConnectionError: "Error: Unable to connect to database",
+    dbError: function(errorMessage) {
+        return "The following database error occurred: " + errorMessage;
+    },
     noResultsFound: "No results found",
     invalidPriceFilter: "Error: At least one of your filters is invalid. " +
     "Filter inputs can be positive, whole numbers only.",
@@ -19,6 +22,7 @@ module.exports = {
         return "The provided " + param + " was invalid. Please try again with a different one.";
     },
 
-    mismatchedPasswords: "Error: Password and confirmation password do not match."
+    mismatchedPasswords: "Error: Password and confirmation password do not match.",
+    duplicateEmail: "An account already exists with this email. Please use another one."
 };
 

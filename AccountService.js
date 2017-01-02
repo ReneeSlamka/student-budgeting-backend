@@ -61,26 +61,39 @@ module.exports = {
             return;
         }
 
-        // Create new account in db
-        var newAccount = new Account({
-            username: tempAccount.username,
-            password: tempAccount.password,
-            email: tempAccount.email,
-            budgets: []
-        });
+        // Check that not a duplicate account
+        Account.findOne({"email" : tempAccount.email}).then(function(account) {
+            if (account) {
+                response.status(422);
+                responseObj = HelperService.createResponseObj(false, Messages.duplicateEmail);
+                response.send(responseObj);
+            } else {
+                // Create new account in db
+                var newAccount = new Account({
+                    username: tempAccount.username,
+                    password: tempAccount.password,
+                    email: tempAccount.email,
+                    budgets: []
+                });
 
-        newAccount.save(function (error) {
-            if (error) {
-                response.status(500); //Todo: decide on better http error code for db saving error
-                response.send(error);//Todo: figure out how to get informative error message
-                return;
+                newAccount.save(function (error) {
+                    if (error) {
+                        response.status(500); //Todo: decide on better http error code for db saving error
+                        response.send(error);//Todo: figure out how to get informative error message
+                        return;
+                    }
+                });
+
+                response.status(200);
+                responseObj = HelperService.createResponseObj(true);
+                response.send(responseObj);
+                //Todo: think of better system for creating response objects
             }
+        }).catch(function(error) {
+            response.status(500);
+            responseObj = HelperService.createResponseObj(false, Messages.dbError(error));
+            response.send(responseObj);
         });
-
-        response.status(200);
-        responseObj = HelperService.createResponseObj(true);
-        //Todo: think of better system for creating response objects
-        response.send(responseObj);
     },
 
     getAccountInfo: function() {
