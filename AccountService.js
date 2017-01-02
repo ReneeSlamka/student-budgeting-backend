@@ -6,6 +6,7 @@
 var Account = require("./Account.model");
 var Messages = require("./Messages");
 var HelperService = require("./HelperService");
+var _ = require('lodash');
 
 var API_Params = {
     username: "username",
@@ -19,9 +20,11 @@ module.exports = {
     createAccount: function (request, response) {
         var responseObj;
         var requestParams = {};
+        var requiredParams = _.cloneDeep(API_Params);
+        delete requiredParams.oldPassword;
 
         // Get provided user credentials from json body
-        var paramsValid = getRequestParams(request, response, requestParams);
+        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
         if (!paramsValid) {
             return;
         }
@@ -78,14 +81,40 @@ module.exports = {
         });
     },
 
-    getAccountInfo: function(response) {
+    getAccountInfo: function(request, response) {
         var responseObj;
-        Account.find({}).then(function(accounts) {
-            //console.log(accounts);
-            response.status(200);
-            responseObj = HelperService.createResponseObj(true);
-            responseObj.accounts = accounts;
-            response.send(responseObj);
+        var requestParams = {};
+        var queryObject = {};
+        var requiredParams = {
+            email: API_Params.email,
+            password: API_Params.password
+        };
+        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
+        if (!paramsValid) {
+            return;
+        }
+        if (HelperService.isValidEmail(requestParams.email)) {
+            queryObject.email = requestParams.email;
+        }
+
+        Account.findOne(queryObject).then(function(account) {
+            if (account) {
+                // Credentials must be correct to get info
+                if (account.password !== requestParams.password) {
+                    response.status(401);
+                    responseObj = HelperService.createResponseObj(false, Messages.incorrectPassword);
+                    response.send(responseObj);
+                    return;
+                }
+                response.status(200);
+                responseObj = HelperService.createResponseObj(true);
+                responseObj.account = account;
+                response.send(responseObj);
+            } else {
+                response.status(404);
+                responseObj = HelperService.createResponseObj(false, Messages.accountNotFound);
+                response.send(responseObj);
+            }
         }).catch(function(error) {
             response.status(500);
             responseObj = HelperService.createResponseObj(false, Messages.dbError(error));
@@ -96,8 +125,28 @@ module.exports = {
     modifyAccount: function(request, response) {
         // Extract account params from request body
         var requestParams = {};
-        var paramsValid = getRequestParams(request, response, requestParams);
+        var requiredParams = _.cloneDeep(API_Params);
+
+        // Remove unnecessary info that is not being changed
+        if (!request.body[API_Params.password]) {
+            delete requiredParams[API_Params.password];
+            delete requiredParams[API_Params.passwordConfirmation];
+        }
+
+        if (!request.body[API_Params.username]) {
+            delete requiredParams[API_Params.username];
+        }
+
+        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
         if (!paramsValid) {
+            return;
+        }
+
+        // If password change check that new password and confirmation entry match
+        if (requestParams.password && requestParams.passwordConfirmation &&
+            requestParams.password != requestParams.passwordConfirmation) {
+            response.status(422);
+            response.send(HelperService.createResponseObj(false, Messages.mismatchedPasswords));
             return;
         }
 
@@ -114,6 +163,7 @@ module.exports = {
                     response.send(HelperService.createResponseObj(false, Messages.incorrectPassword))
                     return;
                 }
+
                 for (var attribute in requestParams) {
                     if (account[attribute] && account[attribute] !== requestParams[attribute]) {
                         account[attribute] = requestParams[attribute];
@@ -146,17 +196,17 @@ module.exports = {
     Function to extract params from JSON body of request. Returns FALSE if one or more
     are missing or empty strings.
  */
-function getRequestParams(request, response, paramContainerObj) {
+function getRequestParams(request, response, paramContainerObj, requiredParams) {
     // Get provided user credentials from json body
-    for (var param in API_Params) {
-        if (request.body && request.body[API_Params[param]]) {
+    for (var param in requiredParams) {
+        if (request.body && request.body[requiredParams[param]]) {
             // Return error for empty strings
-            if (request.body[API_Params[param]].length === 0) {
+            if (request.body[requiredParams[param]].length === 0) {
                 response.status(422);
                 response.send(HelperService.createResponseObj(false, Messages.blankParam(param)));
                 return false;
             }
-            paramContainerObj[param] = request.body[API_Params[param]];
+            paramContainerObj[param] = request.body[requiredParams[param]];
         } else {
             // Return error message indicating which parameter is missing
             response.status(400);
@@ -165,13 +215,4 @@ function getRequestParams(request, response, paramContainerObj) {
         }
     }
     return true;
-}
-
-
-function changePassword() {
-
-}
-
-function changeEmail() {
-
 }

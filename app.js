@@ -74,7 +74,7 @@ app.post("/account", function(request, response) {
 
 app.get("/account", function(request,response) {
     initResponse(response);
-    AccountService.getAccountInfo(response);
+    AccountService.getAccountInfo(request, response);
 });
 
 app.put("/account", function(request, response) {
