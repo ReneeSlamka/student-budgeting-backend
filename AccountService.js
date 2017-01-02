@@ -24,7 +24,7 @@ module.exports = {
         delete requiredParams.oldPassword;
 
         // Get provided user credentials from json body
-        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
+        var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
         if (!paramsValid) {
             return;
         }
@@ -87,9 +87,8 @@ module.exports = {
         var queryObject = {};
         var requiredParams = {
             email: API_Params.email,
-            password: API_Params.password
         };
-        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
+        var paramsValid = getRequestParams(request.query, response, requestParams, requiredParams);
         if (!paramsValid) {
             return;
         }
@@ -97,15 +96,9 @@ module.exports = {
             queryObject.email = requestParams.email;
         }
 
-        Account.findOne(queryObject).then(function(account) {
+        Account.findOne(queryObject, {'_id': 0}).select('username budgets').then(function(account) {
             if (account) {
-                // Credentials must be correct to get info
-                if (account.password !== requestParams.password) {
-                    response.status(401);
-                    responseObj = HelperService.createResponseObj(false, Messages.incorrectPassword);
-                    response.send(responseObj);
-                    return;
-                }
+                // Todo: add session token check to replace password check
                 response.status(200);
                 responseObj = HelperService.createResponseObj(true);
                 responseObj.account = account;
@@ -137,7 +130,7 @@ module.exports = {
             delete requiredParams[API_Params.username];
         }
 
-        var paramsValid = getRequestParams(request, response, requestParams, requiredParams);
+        var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
         if (!paramsValid) {
             return;
         }
@@ -193,20 +186,20 @@ module.exports = {
 };
 
 /*
-    Function to extract params from JSON body of request. Returns FALSE if one or more
-    are missing or empty strings.
+    Function to extract params from either JSON body or query object of request (i.e. first param is
+    either request.body or request.query). Returns FALSE if one or more are missing or empty strings.
  */
-function getRequestParams(request, response, paramContainerObj, requiredParams) {
+function getRequestParams(requestParamSrc, response, paramContainerObj, requiredParams) {
     // Get provided user credentials from json body
     for (var param in requiredParams) {
-        if (request.body && request.body[requiredParams[param]]) {
+        if (requestParamSrc && requestParamSrc[requiredParams[param]]) {
             // Return error for empty strings
-            if (request.body[requiredParams[param]].length === 0) {
+            if (requestParamSrc[requiredParams[param]].length === 0) {
                 response.status(422);
                 response.send(HelperService.createResponseObj(false, Messages.blankParam(param)));
                 return false;
             }
-            paramContainerObj[param] = request.body[requiredParams[param]];
+            paramContainerObj[param] = requestParamSrc[requiredParams[param]];
         } else {
             // Return error message indicating which parameter is missing
             response.status(400);
