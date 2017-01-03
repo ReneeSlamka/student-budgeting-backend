@@ -4,8 +4,10 @@
 
 // Project module imports
 var Account = require("./Account.model");
+var Session = require("./Session.model");
 var Messages = require("./Messages");
 var HelperService = require("./HelperService");
+var CookieParser = require('cookie-parser');
 var _ = require('lodash');
 
 var API_Params = {
@@ -176,8 +178,56 @@ module.exports = {
         });
     },
 
-    login: function() {
+    login: function(request, response) {
+        // Get credentials and validate correctness
+        var requestParams = {};
+        var requiredParams = {
+            email: API_Params.email,
+            password: API_Params.password
+        };
 
+        var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
+        if (!paramsValid) {
+            return;
+        }
+
+        // Todo: necessary to checking email format for validity every time?
+        // Todo: refactor the code below into a function that accepts and "else" function (getting repetitive)
+        Account.findOne({"email" : requestParams.email}).then(function(account) {
+            if (!account) {
+                response.status(404);
+                response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
+                return;
+            } else {
+                // Check password is correct
+                if (account[API_Params.password] != requestParams[API_Params.password]) {
+                    response.status(401);
+                    response.send(HelperService.createResponseObj(false, Messages.incorrectPassword));
+                    return;
+                }
+                // Create new session record and save
+                var tempAccountId = account['_id'];
+                var tempSessionId = generateSessionId(tempAccountId);
+                var newSession = new Session({
+                    accountId: tempAccountId.toString(),
+                    sessionId: tempSessionId,
+                    timestamp: +new Date
+                });
+
+                newSession.save(function (error) {
+                    if (error) {
+                        response.status(500); //Todo: decide on better http error code for db saving error
+                        response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
+                        return;
+                    } else {
+                        // Return session token as header cookie
+                        response.status(200);
+                        response.cookie('sessionId', tempSessionId);
+                        response.send(HelperService.createResponseObj(true));
+                    }
+                });
+            }
+        });
     },
 
     logout: function() {
@@ -208,4 +258,9 @@ function getRequestParams(requestParamSrc, response, paramContainerObj, required
         }
     }
     return true;
+}
+
+function generateSessionId(accountId) {
+    var randomNum = Math.floor((Math.random() * 100) + 1);
+    return accountId.toString() + "-" + randomNum.toString();
 }

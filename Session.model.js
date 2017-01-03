@@ -3,7 +3,7 @@ var Schema = mongoose.Schema;
 
 var SessionSchema = new Schema({
     accountId: {
-        //type: String, //todo: readd once sure what type this is
+        type: String, //todo: re-add once sure what type this is
         required: true,
         unique: false
     },
@@ -12,7 +12,7 @@ var SessionSchema = new Schema({
         required: true,
         unique: true
     },
-    timeStamp: {
+    timestamp: {
         type: Date,
         required: true,
         default: Date.now

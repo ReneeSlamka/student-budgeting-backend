@@ -86,7 +86,7 @@ app.put("/account", function(request, response) {
 // API session functions
 app.post("/session", function(request, response) {
     initResponse(response);
-    AccountService.login();
+    AccountService.login(request, response);
 });
 
 app.delete("/session", function(request, response) {
