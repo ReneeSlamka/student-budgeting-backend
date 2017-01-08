@@ -25,6 +25,7 @@ module.exports = {
 
     mismatchedPasswords: "Error: Password and confirmation password do not match.",
     duplicateEmail: "An account already exists with this email. Please use another one.",
-    incorrectPassword: "The password you entered is incorrect. Please try again."
+    incorrectPassword: "The password you entered is incorrect. Please try again.",
+    invalidSessionId: "Either account not currently logged in or the session id provided is invalid."
 };
 

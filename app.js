@@ -5,8 +5,10 @@ var app = express();
 var mongoose = require("mongoose");
 var db = mongoose.connection;
 var bodyParser = require("body-parser");
+var cookieParser = require("cookie-parser");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+app.use(cookieParser());
 
 // Project module imports
 var Account = require("./Account.model");
@@ -72,12 +74,12 @@ app.post("/account", function(request, response) {
     AccountService.createAccount(request, response);
 });
 
-app.get("/account", function(request,response) {
+app.get("/account/:accountId", function(request,response) {
     initResponse(response);
     AccountService.getAccountInfo(request, response);
 });
 
-app.put("/account", function(request, response) {
+app.put("/account/:accountId", function(request, response) {
     initResponse(response);
     AccountService.modifyAccount(request, response);
 });
@@ -89,9 +91,9 @@ app.post("/session", function(request, response) {
     AccountService.login(request, response);
 });
 
-app.delete("/session", function(request, response) {
+app.delete("/session/:accountId", function(request, response) {
     initResponse(response);
-    AccountService.logout();
+    AccountService.logout(request, response);
 });
 
 
