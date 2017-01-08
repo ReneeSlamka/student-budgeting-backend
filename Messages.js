@@ -5,7 +5,7 @@ module.exports = {
     dbError: function(errorMessage) {
         return "The following database error occurred: " + errorMessage;
     },
-    accountNotFound: "Account not found. Either it does not exist or invalid email " +
+    accountNotFound: "Account not found. Either it does not exist or invalid email or accountId " +
     "was entered.",
     invalidPriceFilter: "Error: At least one of your filters is invalid. " +
     "Filter inputs can be positive, whole numbers only.",

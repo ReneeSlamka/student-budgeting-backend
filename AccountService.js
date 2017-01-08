@@ -90,6 +90,18 @@ module.exports = {
             response.send(HelperService.createResponseObj(false, Messages.missingParam("accountId")));
             return;
         }
+        // Get sessionId from cookie
+        var tempSessionId;
+        if (request.cookies && request.cookies[CookieParams.sessionId]) {
+            tempSessionId = request.cookies[CookieParams.sessionId];
+        } else {
+            response.status(400);
+            response.send(HelperService.createResponseObj(false, Messages.missingParam(CookieParams.sessionId)));
+            return;
+        }
+
+        var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
+        if (!sessionValid) return;
 
         Account.findById(tempAccountId, {'_id': 0}).select('username budgets').then(function(account) {
             if (account) {
