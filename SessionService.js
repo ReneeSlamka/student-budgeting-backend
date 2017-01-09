@@ -36,7 +36,7 @@ module.exports = {
         if session id is valid, false if it is not.
      */
     validateSessionId: function(sessionId, accountId, response) {
-        Session.findOne({"sessionId" : sessionId}).then(function(session) {
+        return Session.findOne({"sessionId" : sessionId}).then(function(session) {
             if (!session) {
                 response.status(404);
                 response.send(HelperService.createResponseObj(false, Messages.invalidSessionId));
@@ -46,7 +46,7 @@ module.exports = {
                 response.send(HelperService.createResponseObj(false, "Error: either accountId or sessionId is invalid"));
                 return false;
             }
-            return true;
+            return true; // sessionId exists in database and is paired with given accountId
         }).catch(function(error) {
             response.status(500);
             response.send(HelperService.createResponseObj(false, Messages.dbError(error)));

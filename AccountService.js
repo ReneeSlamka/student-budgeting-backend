@@ -99,24 +99,27 @@ module.exports = {
             response.send(HelperService.createResponseObj(false, Messages.missingParam(CookieParams.sessionId)));
             return;
         }
-
-        var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
-        if (!sessionValid) return;
-
-        Account.findById(tempAccountId, {'_id': 0}).select('username budgets').then(function(account) {
-            if (account) {
-                // Todo: add session token check to replace password check
-                response.status(200);
-                responseObj = HelperService.createResponseObj(true);
-                responseObj.account = account;
-                response.send(responseObj);
-            } else {
-                response.status(404);
-                response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
+        // Todo fix use of promises
+        //var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
+        //if (!sessionValid) return;
+        SessionService.validateSessionId(tempSessionId, tempAccountId, response).then(function(sessionValid) {
+            if (sessionValid) {
+                Account.findById(tempAccountId, {'_id': 0}).select('username budgets').then(function(account) {
+                    if (account) {
+                        // Todo: add session token check to replace password check
+                        response.status(200);
+                        responseObj = HelperService.createResponseObj(true);
+                        responseObj.account = account;
+                        response.send(responseObj);
+                    } else {
+                        response.status(404);
+                        response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
+                    }
+                }).catch(function(error) {
+                    response.status(500);
+                    response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
+                });
             }
-        }).catch(function(error) {
-            response.status(500);
-            response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
         });
     },
 
@@ -145,67 +148,74 @@ module.exports = {
             return;
         }
 
-        var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
-        if (!sessionValid) return;
+        // Todo: fix use of promises
+        //var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
+        //if (!sessionValid) return;
+        SessionService.validateSessionId(tempSessionId, tempAccountId, response).then(function(sessionValid) {
+           if (sessionValid) {
+               // Remove unnecessary info that is not being changed
+               if (!request.body[QueryParams.newPassword]) {
+                   delete requiredParams[QueryParams.newPassword];
+                   delete requiredParams[QueryParams.passwordConfirmation];
+               }
+               if (!request.body[QueryParams.username]) {
+                   delete requiredParams[QueryParams.username];
+               }
+               delete requiredParams[QueryParams.email];
 
-        // Remove unnecessary info that is not being changed
-        if (!request.body[QueryParams.newPassword]) {
-            delete requiredParams[QueryParams.newPassword];
-            delete requiredParams[QueryParams.passwordConfirmation];
-        }
-        if (!request.body[QueryParams.username]) {
-            delete requiredParams[QueryParams.username];
-        }
-        delete requiredParams[QueryParams.email];
+               if (!request.body[QueryParams.newPassword] && !request.body[QueryParams.username]) {
+                   response.status(401);
+                   response.send(HelperService.createResponseObj(false, Messages.missingParam("username and/or newPassword")));
+                   return;
+               }
 
-        if (!request.body[QueryParams.newPassword] && !request.body[QueryParams.username]) {
-            response.status(401);
-            response.send(HelperService.createResponseObj(false, Messages.missingParam("username and/or newPassword")));
-            return;
-        }
+               var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
+               if (!paramsValid) return;
 
-        var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
-        if (!paramsValid) return;
+               // If password change check that new password and confirmation entry match
+               if (requestParams.newPassword && requestParams.passwordConfirmation &&
+                   requestParams.newPassword != requestParams.passwordConfirmation) {
+                   response.status(422);
+                   response.send(HelperService.createResponseObj(false, Messages.mismatchedPasswords));
+                   return;
+               }
 
-        // If password change check that new password and confirmation entry match
-        if (requestParams.newPassword && requestParams.passwordConfirmation &&
-            requestParams.newPassword != requestParams.passwordConfirmation) {
-            response.status(422);
-            response.send(HelperService.createResponseObj(false, Messages.mismatchedPasswords));
-            return;
-        }
+               // Use params to find account and make changes
+               Account.findById(tempAccountId).then(function(account) {
+                   if (!account) {
+                       response.status(404);
+                       response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
+                       return;
+                   } else {
+                       // Check password is correct
+                       if (account[QueryParams.password] !== requestParams[QueryParams.password]) {
+                           response.status(401);
+                           response.send(HelperService.createResponseObj(false, Messages.incorrectPassword));
+                           return;
+                       }
 
-        // Use params to find account and make changes
-        Account.findById(tempAccountId).then(function(account) {
-            if (!account) {
-                response.status(404);
-                response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
-                return;
-            } else {
-                // Check password is correct
-                if (account[QueryParams.password] !== requestParams[QueryParams.password]) {
-                    response.status(401);
-                    response.send(HelperService.createResponseObj(false, Messages.incorrectPassword));
-                    return;
-                }
-
-                if (requestParams[QueryParams.username]) {
-                    account[QueryParams.username] = requestParams[QueryParams.username];
-                }
-                if (requestParams[QueryParams.newPassword]) {
-                    account[QueryParams.password] = requestParams[QueryParams.newPassword];
-                }
-            }
-            // Save updated version of account (return error if db error occurs)
-            account.save(function (error) {
-                if (error) {
-                    response.status(500); //Todo: decide on better http error code for db saving error
-                    response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
-                    return;
-                }
-            });
-            response.status(200);
-            response.send(HelperService.createResponseObj(true));
+                       if (requestParams[QueryParams.username]) {
+                           account[QueryParams.username] = requestParams[QueryParams.username];
+                       }
+                       if (requestParams[QueryParams.newPassword]) {
+                           account[QueryParams.password] = requestParams[QueryParams.newPassword];
+                       }
+                   }
+                   // Save updated version of account (return error if db error occurs)
+                   account.save(function (error) {
+                       if (error) {
+                           response.status(500); //Todo: decide on better http error code for db saving error
+                           response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
+                           return;
+                       }
+                   });
+                   response.status(200);
+                   response.send(HelperService.createResponseObj(true));
+               }).catch(function(error) {
+                   response.status(500);
+                   response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
+               });
+           }
         });
     },
 
@@ -226,7 +236,6 @@ module.exports = {
             if (!account) {
                 response.status(404);
                 response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
-                return;
             } else {
                 // Check password is correct
                 if (account[QueryParams.password] != requestParams[QueryParams.password]) {
@@ -257,28 +266,31 @@ module.exports = {
             if (!account) {
                 response.status(404);
                 response.send(HelperService.createResponseObj(false, Messages.accountNotFound));
+                throw new Error();
+            }
+        }).then(function() {
+            // Extract and validate sessionId from cookie
+            var tempSessionId;
+
+            if (request.cookies && request.cookies[CookieParams.sessionId]) {
+                tempSessionId = request.cookies[CookieParams.sessionId];
+            } else {
+                response.status(400);
+                response.send(HelperService.createResponseObj(false, Messages.missingParam(CookieParams.sessionId)));
                 return;
             }
+
+            // Todo: fix use of promises
+            SessionService.validateSessionId(tempSessionId, tempAccountId, response).then(function(sessionValid) {
+                if (sessionValid) {
+                    SessionService.invalidateSessionId(tempSessionId, response);
+                }
+            });
         }).catch(function(error) {
             response.status(500);
             response.send(HelperService.createResponseObj(false, Messages.dbError(error)));
-            return;
+
         });
-
-        // Extract and validate sessionId from cookie
-        var tempSessionId;
-
-        if (request.cookies && request.cookies[CookieParams.sessionId]) {
-            tempSessionId = request.cookies[CookieParams.sessionId];
-        } else {
-            response.status(400);
-            response.send(HelperService.createResponseObj(false, Messages.missingParam(CookieParams.sessionId)));
-            return;
-        }
-
-        var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
-        if (!sessionValid) return;
-        SessionService.invalidateSessionId(tempSessionId, response);
     }
 };
 

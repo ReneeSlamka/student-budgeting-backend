@@ -98,22 +98,22 @@ app.delete("/session/:accountId", function(request, response) {
 
 
 // API budget functions
-app.post("/budget", function(requestion, response) {
+app.post("/:accountId/budget", function(requestion, response) {
     initResponse(response);
     BudgetService.createBudget();
 });
 
-app.get("/budget", function(requestion, response) {
+app.get("/:accountId/budget", function(requestion, response) {
     initResponse(response);
     BudgetService.getBudget();
 });
 
-app.put("/budget", function(requestion, response) {
+app.put("/:accountId/budget", function(requestion, response) {
     initResponse(response);
     BudgetService.modifyBudget();
 });
 
-app.post("/budget", function(requestion, response) {
+app.post("/:accountId/budget", function(requestion, response) {
     initResponse(response);
     BudgetService.deleteBudget();
 });
