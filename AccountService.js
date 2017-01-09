@@ -99,9 +99,7 @@ module.exports = {
             response.send(HelperService.createResponseObj(false, Messages.missingParam(CookieParams.sessionId)));
             return;
         }
-        // Todo fix use of promises
-        //var sessionValid = SessionService.validateSessionId(tempSessionId, tempAccountId, response);
-        //if (!sessionValid) return;
+
         SessionService.validateSessionId(tempSessionId, tempAccountId, response).then(function(sessionValid) {
             if (sessionValid) {
                 Account.findById(tempAccountId, {'_id': 0}).select('username budgets').then(function(account) {
@@ -230,8 +228,6 @@ module.exports = {
         var paramsValid = getRequestParams(request.body, response, requestParams, requiredParams);
         if (!paramsValid) return;
 
-        // Todo: necessary to checking email format for validity every time?
-        // Todo: refactor the code below into a function that accepts and "else" function (getting repetitive)
         Account.findOne({"email" : requestParams.email}).then(function(account) {
             if (!account) {
                 response.status(404);
@@ -280,7 +276,6 @@ module.exports = {
                 return;
             }
 
-            // Todo: fix use of promises
             SessionService.validateSessionId(tempSessionId, tempAccountId, response).then(function(sessionValid) {
                 if (sessionValid) {
                     SessionService.invalidateSessionId(tempSessionId, response);
